@@ -8,7 +8,6 @@ import edu.uco.ychong.steppertest.view.fragments.ImprovementFragment
 import edu.uco.ychong.steppertest.view.fragments.ReasonFragment
 
 class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
-
     override fun getCount(): Int {
         return 3
     }
@@ -19,7 +18,6 @@ class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
             1 -> return ReasonFragment()
             2 -> return ImprovementFragment()
         }
-
         return null
     }
 }

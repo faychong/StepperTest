@@ -38,4 +38,11 @@ class FeelingsDiary(var feelings: String,
         }
     }
 
+    override fun toString(): String {
+        return "\nfeeling: $feelings\n" +
+                "feelingExplaination: $feelingsExplanation\n" +
+                "isImprove: $isImprovable\n" +
+                "improvementExplaination: $improvementExplanation\n"
+    }
+
 }

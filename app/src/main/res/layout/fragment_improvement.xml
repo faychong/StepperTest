@@ -26,6 +26,22 @@
                 app:layout_constraintTop_toBottomOf="@+id/id_improvementText" android:layout_marginStart="8dp"
                 app:layout_constraintStart_toStartOf="parent" android:layout_marginEnd="8dp"
                 app:layout_constraintEnd_toEndOf="parent" android:inputType="textShortMessage"/>
+        <Button
+                android:text="Complete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/id_complete"
+                app:layout_constraintTop_toTopOf="@+id/id_back_2" app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="88dp"/>
+        <Button
+                android:text="Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/id_back_2" android:layout_marginTop="100dp"
+                app:layout_constraintTop_toBottomOf="@+id/id_improvementInput"
+                app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="124dp"
+                app:layout_constraintEnd_toStartOf="@+id/id_complete" android:layout_marginEnd="8dp"
+                app:layout_constraintHorizontal_bias="0.0"/>
     </android.support.constraint.ConstraintLayout>
 
 </FrameLayout>

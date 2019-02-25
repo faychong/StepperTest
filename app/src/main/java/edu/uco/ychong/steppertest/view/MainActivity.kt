@@ -1,158 +1,88 @@
 package edu.uco.ychong.steppertest.view
 
-import android.support.v7.app.AppCompatActivity
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
-import android.widget.Spinner
-import android.widget.TextView
-import android.widget.Toast
+import android.support.v4.view.ViewPager
+import android.support.v7.app.AppCompatActivity
 import com.badoualy.stepperindicator.StepperIndicator
-import edu.uco.ychong.steppertest.R
-import edu.uco.ychong.steppertest.model.Feelings
 import edu.uco.ychong.steppertest.model.FeelingsDiary
-import edu.uco.ychong.steppertest.view.fragments.FeelingsFragment
-import edu.uco.ychong.steppertest.view.fragments.ImprovementFragment
-import edu.uco.ychong.steppertest.view.fragments.ReasonFragment
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_feelings.*
-import kotlinx.android.synthetic.main.fragment_improvement.*
-import kotlinx.android.synthetic.main.fragment_reason.*
+
+const val MIN_STEP = 0
+const val MAX_STEP = 2
+const val TAG = "tag"
 
 class MainActivity : AppCompatActivity() {
+
+    private var currentStep = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(edu.uco.ychong.steppertest.R.layout.activity_main)
 
-        val stepper = findViewById<StepperIndicator>(R.id.id_stepper)
-        stepper.stepCount = 3
-        stepper.currentStep = 0
-
-        val feelingsFragment = FeelingsFragment()
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.id_constraintLayout, feelingsFragment)
-            .addToBackStack(null)
-            .commit()
-
-        val feelingsDiary = FeelingsDiary()
-
-        id_nextButton.setOnClickListener {
-            when(stepper.currentStep) {
-                0 -> {
-                    val feelings = id_feelings_spinner.selectedItem.toString().trim()
-
-                    if(feelings.equals("I'm feeling...")) {
-                        Toast.makeText(this, "Please choose a feelings option!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        feelingsDiary.feelings = feelings
-
-                        val reasonFragment = ReasonFragment()
-                        val bundle = Bundle()
-                        bundle.putString("FEELINGS", feelingsDiary.feelings)
-                        reasonFragment.arguments = bundle
-
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.id_constraintLayout, reasonFragment)
-                            .addToBackStack(null)
-                            .commit()
-
-                        stepper.currentStep = 1
-                        Toast.makeText(this, "${bundle.get("FEELINGS")}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                1 -> {
-                    val reason = id_reasonInput.text.toString().trim()
-
-                    if(reason.isNullOrBlank() || reason.isNullOrEmpty()) {
-                        Toast.makeText(this, "Please enter a reason!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        feelingsDiary.feelingsExplanation = reason
-
-                        val improvementFragment = ImprovementFragment()
-                        val bundle = Bundle()
-                        bundle.putString("REASON", feelingsDiary.feelingsExplanation)
-
-                        improvementFragment.arguments = bundle
-
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.id_constraintLayout, improvementFragment)
-                            .addToBackStack(null)
-                            .commit()
-
-                        stepper.currentStep = 2
-                        Toast.makeText(this, "${feelingsDiary.feelings}\n" +
-                                "${bundle.get("REASON")}", Toast.LENGTH_SHORT).show()
-                    }
-
-                }
-                2 -> {
-                    val improvement = id_improvementInput.text.toString().trim()
-
-                    if(improvement.isNullOrEmpty() || improvement.isNullOrBlank()) {
-                        Toast.makeText(this, "Please enter an explanation!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        feelingsDiary.improvementExplanation = improvement
-
-                        val bundle = Bundle()
-
-                        bundle.putString("FEELINGS", bundle.getString("FEELINGS"))
-                        bundle.putString("REASON", bundle.getString("REASON"))
+        // Here we create a storage. This storage has a bunch of data string that can be change.
+        // Think of it as like a bank account that holds your money.
+        val diaryViewModel = ViewModelProviders.of(this).get(DiaryViewModel::class.java)
 
 
-                        val feels = feelingsDiary.feelings
-                        val reason = feelingsDiary.feelingsExplanation
-                        val string = "$feels\n$reason\n$improvement"
+        // This is just to show that the data is being updated.
+        // The final data is in the last fragment (ImprovementFragment) inside of diaryModel.
+        observeMyData(diaryViewModel)
 
-                        stepper.currentStep = 3
-                        Toast.makeText(this, string, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
+        setUpStepperIndicator()
+    }
+
+    private fun setUpStepperIndicator() {
+        val pager = findViewById<ViewPager>(edu.uco.ychong.steppertest.R.id.id_pager)
+        pager.adapter = SectionsPagerAdapter(supportFragmentManager)
+
+        val indicator = findViewById<StepperIndicator>(edu.uco.ychong.steppertest.R.id.id_stepper_indicator)
+        indicator.apply {
+            stepCount = 3
+            currentStep = 0
+            setViewPager(pager, false)
+            addOnStepClickListener { step -> pager.setCurrentItem(step, true) }
         }
+    }
 
-        id_backButton.setOnClickListener {
-            when(stepper.currentStep) {
-                0 -> {
-                    super.onBackPressed()
-                }
-                1 -> {
-                    val feelings = feelingsDiary.feelings
+    private fun observeMyData(diaryViewModel: DiaryViewModel) {
+        val myDiary = FeelingsDiary()
 
-                    if(feelings.equals("I'm feeling...")) {
-                        Toast.makeText(this, "Error!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        //supportFragmentManager.popBackStackImmediate()
 
-                        val backFeelingsFragment = FeelingsFragment()
-                        val bundle = Bundle()
-                        bundle.putString("FEELINGS", feelingsDiary.feelings)
+        // Now we want to observe our storage and be notify if our data change.
+        // This ensure we always have the latest data.
+        // Think of it as like keeping an eye on your bank accounts balance.
+        // Treat each MutableLiveData as like an account, Checking, Saving, Retirement, etc.
 
-                        backFeelingsFragment.arguments = bundle
+        diaryViewModel.feeling.observe(this, Observer {
+            it?.let {
+                myDiary.feelings = "$it"
 
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.id_constraintLayout, backFeelingsFragment)
-                            .addToBackStack(null)
-                            .commit()
-
-                        stepper.currentStep = 0
-
-                        feelingsDiary.feelings = ""
-                        Toast.makeText(this, "${feelingsDiary.feelings}", Toast.LENGTH_SHORT).show()
-                    }
-                }
-                2 -> {
-                    val reason = feelingsDiary.feelingsExplanation
-
-                    if(reason.isNullOrBlank() || reason.isNullOrEmpty()) {
-                        Toast.makeText(this, "Error!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        supportFragmentManager.popBackStackImmediate()
-
-                        stepper.currentStep = 1
-
-                        feelingsDiary.feelingsExplanation = ""
-                        Toast.makeText(this, "${feelingsDiary.feelingsExplanation}", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                id_result.text = "${myDiary.feelings}\n" +
+                        "${myDiary.feelingsExplanation}\n" +
+                        "${myDiary.improvementExplanation}\n"
             }
-        }
+        })
+
+        diaryViewModel.feelingsExplaination.observe(this, Observer {
+            it?.let {
+                myDiary.feelingsExplanation= "$it"
+
+                id_result.text = "${myDiary.feelings}\n" +
+                        "${myDiary.feelingsExplanation}\n" +
+                        "${myDiary.improvementExplanation}\n"
+            }
+        })
+
+        diaryViewModel.improveExplanation.observe(this, Observer {
+            it?.let {
+                myDiary.improvementExplanation = "$it"
+
+                id_result.text = "${myDiary.feelings}\n" +
+                        "${myDiary.feelingsExplanation}\n" +
+                        "${myDiary.improvementExplanation}\n"
+            }
+        })
     }
 }
